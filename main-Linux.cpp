@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -6,8 +7,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
-#include <termios.h>
-#include <unistd.h>
 #define hollow 0
 #define wall 1
 #define player 2
@@ -20,21 +19,32 @@ struct Position{
     int column;
 };
 struct Player{
-    int player1;
-    Position player1Position;
-    int player2;
-    Position player2Position;
+    int id;
+    string name;
+    Position playerPosition;
+    bool isAlive;
+    int roundsWon;
+chrono::steady_clock::time_point nextStepIn;};
+struct Bomb{
+    Position bombPosition;
+    int owner;
+    int range;
+    chrono::steady_clock::time_point placedAt;
+
+};
+struct Flame{
+    Position flamePosition;
+    chrono::steady_clock::time_point expiresAt;
+
 };
 struct Map{
-    int mapOrder;
     int numMap;
     int initRow;
     int initCollum;
     string MapName;
-    int **map=new int*[initRow];
+    int **map;
 };
 struct Game{
-    char keyB;
     bool voltarMenu;
     bool end;
     bool desistiu;
@@ -42,16 +52,16 @@ struct Game{
     bool last;
     bool jogoSalvo;
     bool animate;
-    bool bomb;
-    bool flame;
-    int orientation;
-    int contRotates;
-    int contkeys;
-    int escolha;
+    int choice;
+    int round;
     Player player1;
     Player player2;
+    Bomb *bomb;
+    Flame *flame;
     Map currentMap;
     Map mapOrigin;
+    chrono::steady_clock::time_point startedAt;
+    chrono::steady_clock::time_point endedsAt;
 };
 struct OperationResult{
     bool success;
@@ -63,8 +73,8 @@ struct Menu{
 struct Recorde{
     string nome;
     int mapa;
-    int movimentos;
-    int rotacoes;
+    int roundsWon;
+    int duration;
 };
 template <typename T>
 void trocar(T &first,T &second){
@@ -578,7 +588,7 @@ void menu(Game &game,Menu &menuState,Game &gameCopy){
             cout<<"3-Continuar (indisponível) ";
         }
         cout<<"4-Ver soluções 5-Recordes 6-Fim\n";
-        cout<<"Escolha: ";
+        cout<<"choice: ";
         if(!(cin>>menuState.options)){
             cin.clear();
             cin.ignore(10000,'\n');
@@ -616,8 +626,8 @@ void menu(Game &game,Menu &menuState,Game &gameCopy){
             }
             if(game.jogoSalvo){
                 cout<<"Há um jogo salvo. Digite 1 para cancelar ou 2 para substituí-lo: ";
-                cin>>game.escolha;
-                if(game.escolha!=2){
+                cin>>game.choice;
+                if(game.choice!=2){
                     continue;
                 }
                 remove("jogo_salvo.csv");
